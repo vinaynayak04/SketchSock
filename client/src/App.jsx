@@ -8,10 +8,10 @@ import WordSelector from "./components/WordSelector";
 import GameEnd from "./components/GameEnd";
 import useSounds from "./useSounds";
 
-const SOCKET_URL = import.meta.env.DEV ? "http://localhost:5000" : "";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
 
 export default function App() {
-  const [socket, setSocket] = useState(null);
+  const [socket, setSocket] = useState(() => io(SOCKET_URL));
   const [player, setPlayer] = useState(null);
   const [roomCode, setRoomCode] = useState("");
   const [roomState, setRoomState] = useState(null);
@@ -26,20 +26,19 @@ export default function App() {
 
   // Initialize socket connection
   useEffect(() => {
-    const newSocket = io(SOCKET_URL);
-    setSocket(newSocket);
+    if (!socket) return;
 
-    newSocket.on("connect", () => {
-      console.log("Connected to server:", newSocket.id);
+    socket.on("connect", () => {
+      console.log("Connected to server:", socket.id);
       setError("");
     });
 
-    newSocket.on("connect_error", () => {
+    socket.on("connect_error", () => {
       setError("Unable to connect to game server. Make sure it is running.");
     });
 
     // 1. Joined room successfully
-    newSocket.on("room-joined", ({ roomCode, player }) => {
+    socket.on("room-joined", ({ roomCode, player }) => {
       setRoomCode(roomCode);
       setPlayer(player);
       setMessages([]);
@@ -47,22 +46,22 @@ export default function App() {
     });
 
     // 2. Room State Updates
-    newSocket.on("room-updated", (state) => {
+    socket.on("room-updated", (state) => {
       setRoomState(state);
     });
 
     // 3. Simple timer tick
-    newSocket.on("timer-tick", (timeLeft) => {
+    socket.on("timer-tick", (timeLeft) => {
       setRoomState((prev) => (prev ? { ...prev, timer: timeLeft } : null));
     });
 
     // 4. Update word hint (for guessers)
-    newSocket.on("hint-updated", (hint) => {
+    socket.on("hint-updated", (hint) => {
       setRoomState((prev) => (prev ? { ...prev, hint } : null));
     });
 
     // 5. Turn transitions
-    newSocket.on("round-started", ({ word, isDrawer }) => {
+    socket.on("round-started", ({ word, isDrawer }) => {
       // Set localized hint or drawer word
       setRoomState((prev) => {
         if (!prev) return null;
@@ -74,7 +73,7 @@ export default function App() {
       });
     });
 
-    newSocket.on("round-ended", ({ word, scores }) => {
+    socket.on("round-ended", ({ word, scores }) => {
       // Clear logs slightly on new rounds, or just show reveal banner
       setMessages((prev) => [
         ...prev,
@@ -87,22 +86,32 @@ export default function App() {
     });
 
     // 6. Messaging
-    newSocket.on("chat-message", (msg) => {
+    socket.on("chat-message", (msg) => {
       setMessages((prev) => [...prev, msg]);
     });
 
-    newSocket.on("system-message", (sysMsg) => {
+    socket.on("system-message", (sysMsg) => {
       setMessages((prev) => [...prev, { ...sysMsg, isSystem: true }]);
     });
 
-    newSocket.on("error-message", (errMsg) => {
+    socket.on("error-message", (errMsg) => {
       setError(errMsg);
     });
 
     return () => {
-      newSocket.disconnect();
+      socket.off("connect");
+      socket.off("connect_error");
+      socket.off("room-joined");
+      socket.off("room-updated");
+      socket.off("timer-tick");
+      socket.off("hint-updated");
+      socket.off("round-started");
+      socket.off("round-ended");
+      socket.off("chat-message");
+      socket.off("system-message");
+      socket.off("error-message");
     };
-  }, []);
+  }, [socket]);
 
   // ═══════════════════════════════════════════════════════════════════
   // SOUND TRIGGERS — Timer ticking
@@ -222,8 +231,20 @@ export default function App() {
 
   const handleLeaveRoom = () => {
     if (!socket) return;
-    // Simple page reload triggers disconnect and clean reset
-    window.location.reload();
+    
+    // 1. Terminate current room session socket on server
+    socket.disconnect();
+    
+    // 2. Reset React local states back to lobby defaults
+    setRoomCode("");
+    setRoomState(null);
+    setPlayer(null);
+    setMessages([]);
+    setError("");
+
+    // 3. Open a brand new lobby socket session
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
   };
 
   const copyRoomCode = () => {
@@ -250,18 +271,23 @@ export default function App() {
         : ""
       : "";
 
-  // LOBBY PAGE RENDERING
-  if (isLobby) {
-    return <Lobby socket={socket} onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} error={error} />;
-  }
-
-  // ACTIVE ROOM AND GAMEPLAY SCREEN
+  // LOBBY PAGE RENDERING & ACTIVE GAMEPLAY SCREEN
   return (
-    <div className="app-container">
+    <div className="app-wrapper">
+      <div className="bg-blobs">
+        <div className="blob blob-1"></div>
+        <div className="blob blob-2"></div>
+        <div className="blob blob-3"></div>
+      </div>
+
+      {isLobby ? (
+        <Lobby socket={socket} onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} error={error} />
+      ) : (
+        <div className="app-container">
       {/* Top Header Controls */}
       <header className="glass-panel header">
         <h1 className="logo">
-          🎨 Sketch<span className="logo-accent">Sock</span>
+          <img src="/favicon.svg" alt="SketchSock" className="logo-svg" />Sketch<span className="logo-accent">Sock</span>
         </h1>
         
         {/* State/Action Indicators */}
@@ -346,63 +372,7 @@ export default function App() {
             drawerName={currentDrawer?.username}
           />
 
-          {/* OVERLAY 1: Pre-game waiting room / Lobby start trigger */}
-          {roomState.state === "waiting" && (
-            <div className="canvas-overlay-message" style={{ background: "rgba(10, 10, 15, 0.9)" }}>
-              <div style={{ fontSize: "4rem" }}>🎨</div>
-              <h3>Lobby Waiting Area</h3>
-              <p style={{ maxWidth: "400px", margin: "0 auto", fontSize: "0.95rem" }}>
-                Share the room code above with friends. The game requires at least 2 players to start.
-              </p>
-              {isHost ? (
-                <button
-                  className="btn btn-primary"
-                  onClick={handleStartGame}
-                  disabled={roomState.players.length < 2}
-                  style={{ marginTop: "12px", padding: "12px 24px", fontSize: "1.05rem" }}
-                >
-                  🚀 Start Game ({roomState.players.length} Players)
-                </button>
-              ) : (
-                <div style={{ marginTop: "12px", color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
-                  Waiting for host ({roomState.players.find(p => p.creator)?.username}) to start...
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* OVERLAY 2: Word Selector Modal (only visible to drawer in word selection stage) */}
-          {roomState.state === "selecting_word" && isDrawer && (
-            <WordSelector
-              wordOptions={roomState.wordOptions}
-              timer={roomState.timer}
-              onSelect={handleSelectWord}
-              playWordSelect={sounds.playWordSelect}
-            />
-          )}
-
-          {/* OVERLAY 3: Intermission / Reveal view */}
-          {roomState.state === "reveal" && (
-            <div className="canvas-overlay-message">
-              <h3>Word Revealed!</h3>
-              <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#fff", margin: "10px 0" }}>
-                {roomState.currentWord.toUpperCase()}
-              </div>
-              <p style={{ color: "var(--success-color)", fontWeight: "bold" }}>
-                Standings updating, next turn in {roomState.timer}s...
-              </p>
-            </div>
-          )}
-
-          {/* OVERLAY 4: Game Over stand pod lists */}
-          {roomState.state === "game_over" && (
-            <GameEnd
-              players={roomState.players}
-              isHost={isHost}
-              onPlayAgain={handleStartGame}
-              onLeave={handleLeaveRoom}
-            />
-          )}
         </div>
 
         {/* Right Side: Chat & Guessing Logs */}
@@ -416,9 +386,69 @@ export default function App() {
         />
       </main>
 
+      {/* OVERLAY 1: Pre-game waiting room / Lobby start trigger */}
+      {roomState.state === "waiting" && (
+        <div className="canvas-overlay-message" style={{ background: "rgba(10, 10, 15, 0.9)" }}>
+          <div style={{ fontSize: "4rem" }}>🎨</div>
+          <h3>Lobby Waiting Area</h3>
+          <p style={{ maxWidth: "400px", margin: "0 auto", fontSize: "0.95rem" }}>
+            Share the room code above with friends. The game requires at least 2 players to start.
+          </p>
+          {isHost ? (
+            <button
+              className="btn btn-primary"
+              onClick={handleStartGame}
+              disabled={roomState.players.length < 2}
+              style={{ marginTop: "12px", padding: "12px 24px", fontSize: "1.05rem" }}
+            >
+              🚀 Start Game ({roomState.players.length} Players)
+            </button>
+          ) : (
+            <div style={{ marginTop: "12px", color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+              Waiting for host ({roomState.players.find(p => p.creator)?.username}) to start...
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* OVERLAY 2: Word Selector Modal (only visible to drawer in word selection stage) */}
+      {roomState.state === "selecting_word" && isDrawer && (
+        <WordSelector
+          wordOptions={roomState.wordOptions}
+          timer={roomState.timer}
+          onSelect={handleSelectWord}
+          playWordSelect={sounds.playWordSelect}
+        />
+      )}
+
+      {/* OVERLAY 3: Intermission / Reveal view */}
+      {roomState.state === "reveal" && (
+        <div className="canvas-overlay-message">
+          <h3>Word Revealed!</h3>
+          <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#fff", margin: "10px 0" }}>
+            {roomState.currentWord.toUpperCase()}
+          </div>
+          <p style={{ color: "var(--success-color)", fontWeight: "bold" }}>
+            Standings updating, next turn in {roomState.timer}s...
+          </p>
+        </div>
+      )}
+
+      {/* OVERLAY 4: Game Over stand pod lists */}
+      {roomState.state === "game_over" && (
+        <GameEnd
+          players={roomState.players}
+          isHost={isHost}
+          onPlayAgain={handleStartGame}
+          onLeave={handleLeaveRoom}
+        />
+      )}
+
       <footer className="footer-watermark">
-        Designed with 💜 using WebSockets - SketchSock Clone
+        SketchSock - Designed with 💜 
       </footer>
+        </div>
+      )}
     </div>
   );
 }

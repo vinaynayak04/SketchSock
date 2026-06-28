@@ -502,12 +502,11 @@ class RoomManager {
   getPublicRooms() {
     const publicRooms = [];
     for (const [code, room] of this.rooms.entries()) {
-      if (
-        room.isPublic &&
-        (room.state === "waiting" || room.state === "game_over") &&
-        room.players.length < room.settings.maxPlayers
-      ) {
+      if (room.isPublic && room.players.length > 0) {
         const host = room.players.find((p) => p.creator);
+        const isJoinable =
+          (room.state === "waiting" || room.state === "game_over") &&
+          room.players.length < room.settings.maxPlayers;
         publicRooms.push({
           roomCode: code,
           hostName: host ? host.username : "Unknown",
@@ -516,6 +515,8 @@ class RoomManager {
           maxPlayers: room.settings.maxPlayers,
           rounds: room.settings.rounds,
           drawTime: room.settings.drawTime,
+          state: room.state,
+          isJoinable,
         });
       }
     }

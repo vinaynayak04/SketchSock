@@ -1,6 +1,33 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Avatar, { AVATAR_EMOJIS } from "./Avatar";
 
+// ==========================================
+// EASILY ADD NEW ANNOUNCEMENTS HERE:
+// ==========================================
+const ANNOUNCEMENTS_LIST = [
+  {
+    id: 1,
+    badge: "NEW", // Use "NEW", "UPDATE", or "HOT" (styles apply automatically)
+    date: "June 2026",
+    title: "🎨 Neon Sketch Background",
+    text: "Clean repeating doodle pattern added to enhance drawing-centric gameplay vibe!"
+  },
+  {
+    id: 2,
+    badge: "UPDATE",
+    date: "June 2026",
+    title: "🏆 Standing Screens Re-engineered",
+    text: "Replaced old podium structures with high-fidelity, overlap-proof winner cards."
+  },
+  {
+    id: 3,
+    badge: "HOT",
+    date: "May 2026",
+    title: "🔊 Persistent Sound System",
+    text: "Mute or unmute brush actions and turn alerts directly from the room toolbar."
+  }
+];
+
 export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
   const [activeTab, setActiveTab] = useState("public"); // public | join | create
   const [username, setUsername] = useState(
@@ -23,6 +50,23 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
   const [publicRooms, setPublicRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(false);
 
+  // How to play carousel
+  const [howToPlaySlide, setHowToPlaySlide] = useState(0);
+  const howToPlaySlides = [
+    { emoji: "✏️", title: "Draw", text: "When it's your turn, pick a word and draw it for others to guess!" },
+    { emoji: "💬", title: "Guess", text: "Type your guesses in the chat. Be fast — quicker guesses earn more points!" },
+    { emoji: "🏆", title: "Win", text: "Score the most points across all rounds and be crowned the winner!" },
+    { emoji: "👥", title: "Play Together", text: "Invite friends or join public rooms for maximum fun!" },
+  ];
+
+  // Auto-rotate how to play slides
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setHowToPlaySlide((prev) => (prev + 1) % howToPlaySlides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [howToPlaySlides.length]);
+
   const fetchPublicRooms = useCallback(() => {
     if (!socket) return;
     setLoadingRooms(true);
@@ -31,7 +75,6 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
       setLoadingRooms(false);
     });
 
-    // Fallback if server uses emit instead of callback
     const handleRoomsList = (rooms) => {
       setPublicRooms(rooms || []);
       setLoadingRooms(false);
@@ -43,7 +86,6 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
     };
   }, [socket]);
 
-  // Fetch public rooms when tab is active
   useEffect(() => {
     if (activeTab === "public") {
       fetchPublicRooms();
@@ -86,14 +128,16 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
     });
   };
 
-  // Limit selection size for preview grid
   const previewEmojis = AVATAR_EMOJIS.slice(0, 15);
 
   return (
     <div className="lobby-layout">
+      {/* ========== MAIN LOBBY CARD ========== */}
       <div className="glass-panel lobby-card">
         <div>
-          <h2 className="lobby-title">🎨 SketchSock</h2>
+          <h2 className="lobby-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+            <img src="/favicon.svg" alt="SketchSock" className="logo-svg" /> SketchSock
+          </h2>
           <p style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "0.95rem" }}>
             The ultimate drawing & guessing showdown
           </p>
@@ -133,7 +177,6 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
             🎲 Randomize Emoji
           </button>
 
-          {/* Quick grid selector */}
           <div className="avatar-grid">
             {previewEmojis.map((emoji) => (
               <div
@@ -162,7 +205,7 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
           />
         </div>
 
-        {/* Three Tab Headers */}
+        {/* Tab Headers */}
         <div className="tabs-header">
           <button
             type="button"
@@ -220,24 +263,37 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
                       <div className="public-room-host">
                         <span className="public-room-avatar">{room.hostAvatar}</span>
                         <span className="public-room-host-name">{room.hostName}'s Room</span>
+                        {room.isJoinable ? (
+                          <span className="public-room-tag" style={{
+                            background: "rgba(16, 185, 129, 0.15)",
+                            color: "var(--success-color)",
+                            fontWeight: 600
+                          }}>
+                            Waiting
+                          </span>
+                        ) : (
+                          <span className="public-room-tag" style={{
+                            background: "rgba(244, 63, 94, 0.15)",
+                            color: "var(--error-color)",
+                            fontWeight: 600
+                          }}>
+                            🎮 In Game
+                          </span>
+                        )}
                       </div>
                       <div className="public-room-meta">
-                        <span className="public-room-tag">
-                          👥 {room.playerCount}/{room.maxPlayers}
-                        </span>
-                        <span className="public-room-tag">
-                          🔄 {room.rounds} rounds
-                        </span>
-                        <span className="public-room-tag">
-                          ⏱️ {room.drawTime}s
-                        </span>
+                        <span className="public-room-tag">👥 {room.playerCount}/{room.maxPlayers}</span>
+                        <span className="public-room-tag">🔄 {room.rounds} rounds</span>
+                        <span className="public-room-tag">⏱️ {room.drawTime}s</span>
                       </div>
                     </div>
                     <button
-                      className="btn btn-primary btn-join-public"
+                      className={`btn ${room.isJoinable ? "btn-primary" : "btn-secondary"} btn-join-public`}
                       onClick={() => handleJoinPublicRoom(room.roomCode)}
+                      disabled={!room.isJoinable}
+                      title={room.isJoinable ? "Join this room" : "Game in progress — wait for it to finish"}
                     >
-                      Join
+                      {room.isJoinable ? "Join" : "In Game"}
                     </button>
                   </div>
                 ))
@@ -271,7 +327,6 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
         {/* ===================== TAB: CREATE ROOM ===================== */}
         {activeTab === "create" && (
           <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* Public / Private Toggle */}
             <div className="room-type-toggle">
               <button
                 type="button"
@@ -350,6 +405,95 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
           </form>
         )}
       </div>
+
+      {/* ========== INFO SECTIONS (About / How to Play / Features) ========== */}
+      <div className="lobby-info-sections">
+        {/* About Card */}
+        <div className="glass-panel lobby-info-card">
+          <div className="info-card-header">
+            <span className="info-card-icon">❓</span>
+            <h3 className="info-card-title">About</h3>
+          </div>
+          <div className="info-card-body">
+            <p>
+              <strong style={{ color: "var(--accent-light)" }}>SketchSock</strong> is a free online multiplayer
+              drawing and guessing pictionary game.
+            </p>
+            <p>
+              A normal game consists of a few rounds, where every round a player
+              has to draw their chosen word and others have to guess it to gain points!
+            </p>
+            <p>
+              The person with the most points at the end of the game will then be crowned
+              as the winner! Have fun! 🎉
+            </p>
+          </div>
+        </div>
+
+        {/* How to Play Card */}
+        <div className="glass-panel lobby-info-card">
+          <div className="info-card-header">
+            <span className="info-card-icon">🎮</span>
+            <h3 className="info-card-title">How to Play</h3>
+          </div>
+          <div className="info-card-body how-to-play-carousel">
+            <div className="htp-slide" key={howToPlaySlide}>
+              <div className="htp-slide-emoji">{howToPlaySlides[howToPlaySlide].emoji}</div>
+              <h4 className="htp-slide-title">{howToPlaySlides[howToPlaySlide].title}</h4>
+              <p className="htp-slide-text">{howToPlaySlides[howToPlaySlide].text}</p>
+            </div>
+            <div className="htp-dots">
+              {howToPlaySlides.map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`htp-dot ${idx === howToPlaySlide ? "active" : ""}`}
+                  onClick={() => setHowToPlaySlide(idx)}
+                  aria-label={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Announcements / News Card */}
+        <div className="glass-panel lobby-info-card">
+          <div className="info-card-header">
+            <span className="info-card-icon">📢</span>
+            <h3 className="info-card-title">Announcements</h3>
+          </div>
+          <div className="info-card-body" style={{ maxHeight: "220px", overflowY: "auto", paddingRight: "4px" }}>
+            {ANNOUNCEMENTS_LIST.map((announcement) => (
+              <div key={announcement.id} className="announcement-item" style={{ marginBottom: "16px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span className={`announcement-badge badge-${announcement.badge.toLowerCase()}`}>{announcement.badge}</span>
+                  <span className="announcement-date">{announcement.date}</span>
+                </div>
+                <h4 className="announcement-item-title">{announcement.title}</h4>
+                <p className="announcement-item-text">{announcement.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ========== FOOTER ========== */}
+      <footer className="lobby-footer">
+        <div className="lobby-footer-links">
+          <a href="#contact" className="lobby-footer-link">Contact</a>
+          <span className="lobby-footer-sep">·</span>
+          <a href="#terms" className="lobby-footer-link">Terms of Service</a>
+          <span className="lobby-footer-sep">·</span>
+          <a href="#credits" className="lobby-footer-link">Credits</a>
+          <span className="lobby-footer-sep">·</span>
+          <a href="#privacy" className="lobby-footer-link">Privacy Settings</a>
+        </div>
+        <p className="lobby-footer-disclaimer">
+          The owner of this site is not responsible for any user generated content (drawings, messages, usernames).
+        </p>
+        <p className="lobby-footer-copy">
+          © {new Date().getFullYear()} SketchSock — Made with ❤️
+        </p>
+      </footer>
     </div>
   );
 }

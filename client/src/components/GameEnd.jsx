@@ -10,68 +10,63 @@ export default function GameEnd({ players = [], isHost, onPlayAgain, onLeave }) 
   const thirdPlace = sorted[2] || null;
   const rest = sorted.slice(3);
 
+  const medals = ["🥇", "🥈", "🥉"];
+
   return (
     <div className="game-end-overlay">
-      <div style={{ textAlign: "center", width: "100%", maxWidth: "800px", padding: "0 24px" }}>
-        <h1 className="game-end-title">🏆 Game Over! 🏆</h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem", marginTop: "8px" }}>
-          Here are the final standings
-        </p>
-
-        {/* Podiums */}
-        <div className="podium-container">
-          {/* 2nd Place */}
-          {secondPlace && (
-            <div className="podium-place second">
-              <div className="podium-player-info">
-                <Avatar emoji={secondPlace.avatar} seed={secondPlace.username} size="medium" />
-                <div className="podium-username">{secondPlace.username}</div>
-                <div className="podium-score">{secondPlace.score} pts</div>
-              </div>
-              <div className="podium-bar">2nd</div>
-            </div>
-          )}
-
-          {/* 1st Place */}
-          {firstPlace && (
-            <div className="podium-place first">
-              <div className="podium-player-info">
-                <Avatar emoji={firstPlace.avatar} seed={firstPlace.username} size="large" />
-                <div className="podium-username" style={{ fontSize: "1.2rem", color: "#ffd700" }}>
-                  👑 {firstPlace.username}
-                </div>
-                <div className="podium-score" style={{ fontWeight: 600 }}>{firstPlace.score} pts</div>
-              </div>
-              <div className="podium-bar">1st</div>
-            </div>
-          )}
-
-          {/* 3rd Place */}
-          {thirdPlace && (
-            <div className="podium-place third">
-              <div className="podium-player-info">
-                <Avatar emoji={thirdPlace.avatar} seed={thirdPlace.username} size="medium" />
-                <div className="podium-username">{thirdPlace.username}</div>
-                <div className="podium-score">{thirdPlace.score} pts</div>
-              </div>
-              <div className="podium-bar">3rd</div>
-            </div>
-          )}
+      <div className="game-end-content">
+        {/* Header section — always at top, never overlapped */}
+        <div className="game-end-header">
+          <h1 className="game-end-title">🏆 Game Over! 🏆</h1>
+          <p className="game-end-subtitle">Here are the final standings</p>
         </div>
 
-        {/* Rest of the players list */}
+        {/* Winner card — 1st place highlighted */}
+        {firstPlace && (
+          <div className="winner-card winner-gold">
+            <span className="winner-medal">🥇</span>
+            <Avatar emoji={firstPlace.avatar} seed={firstPlace.username} className="winner-avatar winner-avatar-first" />
+            <div className="winner-name">👑 {firstPlace.username}</div>
+            <div className="winner-score">{firstPlace.score} pts</div>
+          </div>
+        )}
+
+        {/* 2nd and 3rd place side by side */}
+        {(secondPlace || thirdPlace) && (
+          <div className="runner-up-row">
+            {secondPlace && (
+              <div className="winner-card winner-silver">
+                <span className="winner-medal">🥈</span>
+                <Avatar emoji={secondPlace.avatar} seed={secondPlace.username} className="winner-avatar" />
+                <div className="winner-name">{secondPlace.username}</div>
+                <div className="winner-score">{secondPlace.score} pts</div>
+              </div>
+            )}
+            {thirdPlace && (
+              <div className="winner-card winner-bronze">
+                <span className="winner-medal">🥉</span>
+                <Avatar emoji={thirdPlace.avatar} seed={thirdPlace.username} className="winner-avatar" />
+                <div className="winner-name">{thirdPlace.username}</div>
+                <div className="winner-score">{thirdPlace.score} pts</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rest of the players */}
         {rest.length > 0 && (
           <div
             className="glass-panel"
             style={{
-              marginTop: "32px",
-              padding: "16px",
-              maxHeight: "180px",
+              padding: "12px 16px",
+              maxHeight: "160px",
               overflowY: "auto",
-              textAlign: "left"
+              textAlign: "left",
+              width: "100%",
+              maxWidth: "400px"
             }}
           >
-            <h4 style={{ borderBottom: "1px solid var(--glass-border)", paddingBottom: "8px", marginBottom: "8px" }}>
+            <h4 style={{ borderBottom: "1px solid var(--glass-border)", paddingBottom: "6px", marginBottom: "6px", fontSize: "0.85rem" }}>
               Runner-ups
             </h4>
             {rest.map((p, idx) => (
@@ -81,29 +76,29 @@ export default function GameEnd({ players = [], isHost, onPlayAgain, onLeave }) 
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "6px 0",
+                  padding: "5px 0",
                   borderBottom: idx === rest.length - 1 ? "none" : "1px solid rgba(255,255,255,0.02)"
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{ color: "var(--text-muted)", fontWeight: "bold" }}>#{idx + 4}</span>
+                  <span style={{ color: "var(--text-muted)", fontWeight: "bold", fontSize: "0.85rem" }}>#{idx + 4}</span>
                   <Avatar emoji={p.avatar} seed={p.username} size="small" />
-                  <span>{p.username}</span>
+                  <span style={{ fontSize: "0.9rem" }}>{p.username}</span>
                 </div>
-                <span style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>{p.score} pts</span>
+                <span style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{p.score} pts</span>
               </div>
             ))}
           </div>
         )}
 
         {/* Action Buttons */}
-        <div style={{ display: "flex", gap: "16px", justifyContent: "center", marginTop: "40px" }}>
+        <div className="game-end-actions">
           {isHost ? (
             <button className="btn btn-primary" onClick={onPlayAgain}>
               🔄 Play Again
             </button>
           ) : (
-            <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", alignSelf: "center" }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", textAlign: "center" }}>
               Waiting for host to start a new game...
             </p>
           )}
