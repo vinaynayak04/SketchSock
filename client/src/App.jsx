@@ -19,6 +19,21 @@ export default function App() {
   const [error, setError] = useState("");
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // Theme & performance preferences
+  const [theme, setTheme] = useState(() => localStorage.getItem("sketchsock-theme") || "dark");
+  const [showBlobs, setShowBlobs] = useState(() => localStorage.getItem("sketchsock-show-blobs") !== "false");
+
+  // Sync theme to document body
+  useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+    localStorage.setItem("sketchsock-theme", theme);
+  }, [theme]);
+
+  // Sync blobs preference
+  useEffect(() => {
+    localStorage.setItem("sketchsock-show-blobs", String(showBlobs));
+  }, [showBlobs]);
+
   // Sound system
   const sounds = useSounds();
   const prevTimerRef = useRef(null);
@@ -274,14 +289,26 @@ export default function App() {
   // LOBBY PAGE RENDERING & ACTIVE GAMEPLAY SCREEN
   return (
     <div className="app-wrapper">
-      <div className="bg-blobs">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
-      </div>
+      {showBlobs && (
+        <div className="bg-blobs">
+          <div className="blob blob-1"></div>
+          <div className="blob blob-2"></div>
+          <div className="blob blob-3"></div>
+        </div>
+      )}
 
       {isLobby ? (
-        <Lobby socket={socket} onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} error={error} />
+        <Lobby
+          socket={socket}
+          onCreateRoom={handleCreateRoom}
+          onJoinRoom={handleJoinRoom}
+          error={error}
+          sounds={sounds}
+          theme={theme}
+          setTheme={setTheme}
+          showBlobs={showBlobs}
+          setShowBlobs={setShowBlobs}
+        />
       ) : (
         <div className="app-container">
       {/* Top Header Controls */}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Avatar, { AVATAR_EMOJIS } from "./Avatar";
+import FooterModals from "./FooterModals";
 
 // ==========================================
 // EASILY ADD NEW ANNOUNCEMENTS HERE:
@@ -28,8 +29,19 @@ const ANNOUNCEMENTS_LIST = [
   }
 ];
 
-export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
+export default function Lobby({
+  socket,
+  onCreateRoom,
+  onJoinRoom,
+  error,
+  sounds,
+  theme,
+  setTheme,
+  showBlobs,
+  setShowBlobs
+}) {
   const [activeTab, setActiveTab] = useState("public"); // public | join | create
+  const [activeModal, setActiveModal] = useState(null); // null | "contact" | "terms" | "credits" | "privacy"
   const [username, setUsername] = useState(
     () => `Player${Math.floor(Math.random() * 900) + 100}`
   );
@@ -479,13 +491,37 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
       {/* ========== FOOTER ========== */}
       <footer className="lobby-footer">
         <div className="lobby-footer-links">
-          <a href="#contact" className="lobby-footer-link">Contact</a>
+          <button
+            onClick={() => setActiveModal("contact")}
+            className="lobby-footer-link"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            Contact
+          </button>
           <span className="lobby-footer-sep">·</span>
-          <a href="#terms" className="lobby-footer-link">Terms of Service</a>
+          <button
+            onClick={() => setActiveModal("terms")}
+            className="lobby-footer-link"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            Terms of Service
+          </button>
           <span className="lobby-footer-sep">·</span>
-          <a href="#credits" className="lobby-footer-link">Credits</a>
+          <button
+            onClick={() => setActiveModal("credits")}
+            className="lobby-footer-link"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            Credits
+          </button>
           <span className="lobby-footer-sep">·</span>
-          <a href="#privacy" className="lobby-footer-link">Privacy Settings</a>
+          <button
+            onClick={() => setActiveModal("privacy")}
+            className="lobby-footer-link"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            Privacy Settings
+          </button>
         </div>
         <p className="lobby-footer-disclaimer">
           The owner of this site is not responsible for any user generated content (drawings, messages, usernames).
@@ -494,6 +530,19 @@ export default function Lobby({ socket, onCreateRoom, onJoinRoom, error }) {
           © {new Date().getFullYear()} SketchSock — Made with ❤️
         </p>
       </footer>
+
+      {/* Render Footer Modal Overlay */}
+      {activeModal && (
+        <FooterModals
+          activeTab={activeModal}
+          onClose={() => setActiveModal(null)}
+          sounds={sounds}
+          theme={theme}
+          setTheme={setTheme}
+          showBlobs={showBlobs}
+          setShowBlobs={setShowBlobs}
+        />
+      )}
     </div>
   );
 }
