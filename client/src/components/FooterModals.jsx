@@ -50,7 +50,7 @@ export default function FooterModals({
     e.preventDefault();
     if (!contactName || !contactMessage) return;
 
-    const targetEmail = "support@sketchsock.com";
+    const targetEmail = "askvinayy06@gmail.com";
     const emailSubject = `[SketchSock ${contactCategory}] Message from ${contactName}`;
     const emailBody = `Hi SketchSock Team,
 
@@ -295,7 +295,7 @@ Contact Email: ${contactEmail || "Not Provided"}`;
               <div className="credits-grid">
                 <div className="credit-card">
                   <span className="credit-card-role">Developer & Creator</span>
-                  <span className="credit-card-name">Vinay Nayak</span>
+                  <span className="credit-card-name">Vinay</span>
                   <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Full-Stack engineering and Web Audio synthesizer engine.</span>
                 </div>
 
