@@ -52,6 +52,7 @@ class Room {
     this.timerInterval = null;
     this.guessedCount = 0;
     this.io = null; // reference to Socket.io instance
+    this.usedWords = new Set();
   }
 
   setIO(io) {
@@ -199,6 +200,7 @@ class Room {
     this.state = "starting";
     this.currentRound = 1;
     this.drawerIndex = 0;
+    this.usedWords.clear();
     this.players.forEach(p => {
       p.score = 0;
       p.guessed = false;
@@ -238,7 +240,11 @@ class Room {
     }
 
     this.state = "selecting_word";
-    this.wordOptions = getRandomWords(3);
+    if (this.usedWords.size >= 150) {
+      this.usedWords.clear();
+    }
+    this.wordOptions = getRandomWords(3, Array.from(this.usedWords));
+    this.wordOptions.forEach(word => this.usedWords.add(word));
     this.currentWord = "";
     this.revealedHint = "";
     
