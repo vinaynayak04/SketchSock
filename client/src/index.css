@@ -1165,7 +1165,7 @@ select.input-field option {
 
 .color-swatches {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(14, 1fr);
   gap: 4px;
 }
 
@@ -1536,7 +1536,7 @@ select.input-field option {
   }
 
   .color-swatches {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: 3px;
   }
 
@@ -1716,7 +1716,7 @@ select.input-field option {
   }
 
   .color-swatches {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: 3px;
   }
 

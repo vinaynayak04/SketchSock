@@ -510,9 +510,7 @@ class RoomManager {
     for (const [code, room] of this.rooms.entries()) {
       if (room.isPublic && room.players.length > 0) {
         const host = room.players.find((p) => p.creator);
-        const isJoinable =
-          (room.state === "waiting" || room.state === "game_over") &&
-          room.players.length < room.settings.maxPlayers;
+        const isJoinable = room.players.length < room.settings.maxPlayers;
         publicRooms.push({
           roomCode: code,
           hostName: host ? host.username : "Unknown",

@@ -1,10 +1,20 @@
 import React, { useRef, useState, useEffect } from "react";
 
 const COLORS = [
-  "#000000", "#555555", "#aaaaaa", "#ffffff", // Grayscale
-  "#ef4444", "#f97316", "#eab308", "#22c55e", // Warm / Brights
-  "#06b6d4", "#3b82f6", "#6366f1", "#a855f7", // Cools
-  "#ec4899", "#78350f", "#451a03", "#0f172a"  // Pink, Browns, Slates
+  // Row 1: Grayscale & Slate
+  "#000000", "#1e293b", "#4b5563", "#9ca3af", "#d1d5db", "#ffffff",
+  // Row 2: Reds & Pinks
+  "#7f1d1d", "#dc2626", "#ef4444", "#f87171", "#fbcfe8", "#db2777",
+  // Row 3: Peaches & Oranges & Yellows
+  "#7c2d12", "#ea580c", "#f97316", "#fb923c", "#fef08a", "#eab308",
+  // Row 4: Greens
+  "#064e3b", "#16a34a", "#22c55e", "#4ade80", "#a3e635", "#84cc16",
+  // Row 5: Teals & Light Blues
+  "#134e5e", "#0d9488", "#06b6d4", "#22d3ee", "#38bdf8", "#7dd3fc",
+  // Row 6: Blues & Purples
+  "#1e3a8a", "#2563eb", "#3b82f6", "#6366f1", "#a855f7", "#c084fc",
+  // Row 7: Magentas & Browns
+  "#4d0752", "#a21caf", "#c026d3", "#f472b6", "#78350f", "#451a03"
 ];
 
 const BRUSH_SIZES = [

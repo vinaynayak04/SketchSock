@@ -67,11 +67,6 @@ io.on("connection", (socket) => {
       return;
     }
 
-    if (room.state !== "waiting" && room.state !== "game_over") {
-      socket.emit("error-message", "Game has already started in this room");
-      return;
-    }
-
     const player = {
       id: socket.id,
       socketId: socket.id,

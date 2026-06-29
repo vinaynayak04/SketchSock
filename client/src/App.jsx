@@ -421,17 +421,33 @@ export default function App() {
           <p style={{ maxWidth: "400px", margin: "0 auto", fontSize: "0.95rem" }}>
             Share the room code above with friends. The game requires at least 2 players to start.
           </p>
+
+          <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+            <span className="public-room-tag" style={{ background: "rgba(99, 102, 241, 0.2)", color: "var(--accent-light)", fontSize: "0.95rem", padding: "6px 16px", borderRadius: "var(--radius-full)" }}>
+              👥 {roomState.players.length} Players Connected
+            </span>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", maxWidth: "380px", marginTop: "8px" }}>
+              {roomState.players.map(p => (
+                <div key={p.id} className="player-tag" style={{ display: "flex", alignItems: "center", gap: "6px", background: "rgba(255,255,255,0.05)", padding: "4px 10px", borderRadius: "12px", border: "1px solid var(--glass-border)" }}>
+                  <span>{p.avatar}</span>
+                  <span style={{ fontWeight: 500, fontSize: "0.85rem" }}>{p.username}</span>
+                  {p.creator && <span style={{ fontSize: "0.75rem", color: "var(--warning-color)" }} title="Lobby Host">👑</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {isHost ? (
             <button
               className="btn btn-primary"
               onClick={handleStartGame}
               disabled={roomState.players.length < 2}
-              style={{ marginTop: "12px", padding: "12px 24px", fontSize: "1.05rem" }}
+              style={{ marginTop: "20px", padding: "12px 24px", fontSize: "1.05rem" }}
             >
               🚀 Start Game ({roomState.players.length} Players)
             </button>
           ) : (
-            <div style={{ marginTop: "12px", color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
+            <div style={{ marginTop: "20px", color: "var(--text-muted)", fontStyle: "italic", fontSize: "0.95rem" }}>
               Waiting for host ({roomState.players.find(p => p.creator)?.username}) to start...
             </div>
           )}
